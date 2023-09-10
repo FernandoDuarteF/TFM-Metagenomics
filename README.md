@@ -101,3 +101,67 @@ for i in */reverse.*.gz; do id=$(echo $i | cut -d"/" -f1); mv $i ${id}_1.fastq.g
 # for reverse reads
 for i in */forward.*.gz; do id=$(echo $i | cut -d"/" -f1); mv $i ${id}_2.fastq.gz; done
 ```
+
+### 29/07/2023
+
+It's good practice to check the number of reads in each sample. This can be done using the next command:
+
+```
+for i in *.fastq.gz; do echo $i; echo $(zcat $i | wc -l)/4 | bc; done > number-reads
+```
+
+``pandoc README.md -o README.pdf --bibliography=README.bib``
+
+### 31/07/2023
+
+To get the counts from the bam file with the reads mapped to the protein catalog, we first need to get rid of the unmapped reads:
+
+```
+samtools view -b -F 4 file.bam > mapped.bam
+```
+
+After this, we need to create an index for the new bam file:
+
+```
+samtools index mapped.bam
+```
+
+Once we have the index, we can use samtool's idxstats to get the read mapped to each protein;
+
+```
+samtools idxstats mapped.bam
+```
+
+Here the first column would be the reference id, the second column the mapped reads, and the third the unmapped reads. Unmapped reads means that although one of reads was mapped, the other pair remained unmapped.
+
+### 01/07/2023
+
+Once reads have bee mapped to the calogue, the next step before filtering should be to check the alignment stats;
+
+```
+samtools flagstat file.bam
+```
+
+Look for mapped reads and properly mapped reads. For the counts, seems logical to choose one of the pairs that has a properly mapped pair. *IMPORTAT: AM I LOOSING INFORMATION WITH THIS APPROACH (SELECTING ONLY PROPERLY MAPPED READS)* Might be necesssary to check.
+
+To extract the read counts for every protein did the following:
+
+```
+# First select one of the pair whoose mate is properly mapped
+samtools view -f 67 -b file.bam > mapped_pair.bam
+# Check again
+samtools flagstat mapped_pair.bam
+# Create index 
+samtools index mapped_pair.bam
+# Use indxstats to extract the counts and create counts files
+samtools idxstats mapped_pair.bam | cut -f1,3 | grep -v "\*" | awk '$2!=0 {print $0}' > counts.txt
+```
+
+``cut`` is used here retrieve the id column and the mapped reads counts column. Use this broad institute https://broadinstitute.github.io/picard/explain-flags.html page to check for the different flags to extract reads properly with ``samtools view``. awk is used to remve those proteins with 0 counts.
+
+### 07/08/2023
+
+It is advisable to also remove duplicates from the bam files, therefore ``-F 1024`` flag needs to be added:
+
+
+Also, to remove reads of a pair that map to different genes using mapping quality, instead of mapped in proper pairs, for filtering might be an option.
