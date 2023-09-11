@@ -163,5 +163,22 @@ samtools idxstats mapped_pair.bam | cut -f1,3 | grep -v "\*" | awk '$2!=0 {print
 
 It is advisable to also remove duplicates from the bam files, therefore ``-F 1024`` flag needs to be added:
 
+Also, to remove reads of a pair that map to different genes using mapping quality, instead of mapped in proper pairs, for filtering might be an option. Problem with this, with quality filtering also a lot of reads are lost, and the aim is to remove reads mapped to different chromosomes. Is better to use reads mapped in proper pairs, otherwise, if the reads of a pair are mapped in different genes, that gives us no useful information and will be missleading.
 
-Also, to remove reads of a pair that map to different genes using mapping quality, instead of mapped in proper pairs, for filtering might be an option.
+### 15/08/2023
+
+For extrating reads counts first this command was run:
+
+```
+for i in mapped_to_catalog/*.bam; do bash scripts/samtools_counts.sh $i; done
+```
+
+For creating the counts table use this script:
+
+```
+python ../../scripts/count_table.py -c SRR* -head y
+```
+
+This will output a count matrix for all samples.
+
+For preforming normalization a file with sample information in this format must be provided (sperated by space): ``sample_name norm_factor``
